@@ -1,0 +1,137 @@
+/ This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © rjmiles9598
+
+//@version=6
+
+indicator("Primary,Intermediate,Short-term analysis", overlay=true)
+
+// Calculate Current Day High and Low
+var float dayHigh = na
+var float dayLow = na
+if (dayofweek(time) != dayofweek(time[1]))
+    dayHigh := high
+    dayLow := low
+else
+    dayHigh := na(dayHigh) ? high : math.max(dayHigh, high)
+    dayLow := na(dayLow) ? low : math.min(dayLow, low)
+
+var int tradingDayStartBar = na // Persistent variable to store the first bar index of the trading day
+if (dayofweek(time) != dayofweek(time[1])) // Detect the start of a new trading day
+    tradingDayStartBar := bar_index
+startBar = tradingDayStartBar
+
+
+// Function to Build a Rectangle Bound by Bars
+f_createBarRectangle(highPrice, lowPrice) =>
+    // Calculate rectangle boundaries based on bar index
+    startBar2 = startBar // Approximation: Start of the day (based on 5-minute bars, ~78 bars per day)
+    endBar = bar_index // Current bar index
+
+    // Draw or update rectangle
+    var box rect = na
+    if (na(rect))
+        rect := box.new(left=startBar2, top=highPrice, right=endBar, bottom=lowPrice, border_color=color.green, bgcolor=color.new(color.green, 90), xloc=xloc.bar_index)
+    else
+        box.set_left(rect, startBar2)
+        box.set_right(rect, endBar)
+        box.set_top(rect, highPrice)
+        box.set_bottom(rect, lowPrice)
+
+    rect
+
+// Use the Function to Create the Rectangle
+f_createBarRectangle(dayHigh, dayLow)
+
+
+
+//Packaged Weeks portion of this script
+
+// Calculate Current Week High and Low
+var float weekHigh = na
+var float weekLow = na
+if (weekofyear(time) != weekofyear(time[1]))
+    weekHigh := high
+    weekLow := low
+else
+    weekHigh := na(weekHigh) ? high : math.max(weekHigh, high)
+    weekLow := na(weekLow) ? low : math.min(weekLow, low)
+
+// Function to Build a Rectangle Bound by Bars for the Week
+f_createWeeklyRectangle(highPrice, lowPrice) =>
+    // Calculate rectangle boundaries based on bar index
+    var int weekStartBar = na // Persistent variable to store the first bar index of the week
+    if (weekofyear(time) != weekofyear(time[1]))
+        weekStartBar := bar_index // Record the starting bar of the new week
+    startBar1 = weekStartBar
+    endBar = bar_index // Current bar index
+
+    // Draw or update rectangle
+    var box rect = na
+    if (na(rect))
+        rect := box.new(left=startBar, top=highPrice, right=endBar, bottom=lowPrice, border_color=color.blue, bgcolor=color.new(color.blue, 85), xloc=xloc.bar_index)
+    else
+        box.set_left(rect, startBar)
+        box.set_right(rect, endBar)
+        box.set_top(rect, highPrice)
+        box.set_bottom(rect, lowPrice)
+
+    rect
+
+// Use the Function to Create the Rectangle
+f_createWeeklyRectangle(weekHigh, weekLow)
+
+
+
+//Packaged Months portion of this script
+
+// Calculate Current Month High and Low
+var float monthHigh = na
+var float monthLow = na
+var int monthStartBar = na
+var label highLabel = na
+var label lowLabel = na
+
+if (month(time) != month(time[1]))
+    monthHigh := high
+    monthLow := low
+    monthStartBar := bar_index // Record the first bar of the new month
+else
+    monthHigh := na(monthHigh) ? high : math.max(monthHigh[1], high) // Use prior value
+    monthLow := na(monthLow) ? low : math.min(monthLow[1], low)     // Use prior value
+
+// Function to Build a Monthly Rectangle
+f_createMonthlyRectangle(highPrice, lowPrice) =>
+    // Calculate rectangle boundaries
+    startBar2 = monthStartBar
+    endBar = bar_index // Current bar index
+
+    // Draw or update rectangle
+    var box rect = na
+    if (na(rect))
+        rect := box.new(left=startBar, top=highPrice, right=endBar, bottom=lowPrice, border_color=color.blue, bgcolor=color.new(color.blue, 85), xloc=xloc.bar_index)
+    else
+        box.set_left(rect, startBar)
+        box.set_right(rect, endBar)
+        box.set_top(rect, highPrice)
+        box.set_bottom(rect, lowPrice)
+
+    rect
+
+// Add labels to indicate the monthly high and low values
+if not na(monthHigh) and not na(monthLow)
+    if na(highLabel)
+        highLabel := label.new(x=bar_index, y=monthHigh, text="High: " + str.tostring(monthHigh, format.mintick), color=color.new(color.green, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
+    else
+        label.set_x(highLabel, bar_index)
+        label.set_y(highLabel, monthHigh)
+        label.set_text(highLabel, "High: " + str.tostring(monthHigh, format.mintick))
+
+    if na(lowLabel)
+        lowLabel := label.new(x=bar_index, y=monthLow, text="Low: " + str.tostring(monthLow, format.mintick), color=color.new(color.red, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
+    else
+        label.set_x(lowLabel, bar_index)
+        label.set_y(lowLabel, monthLow)
+        label.set_text(lowLabel, "Low: " + str.tostring(monthLow, format.mintick))
+
+// Use the Function to Create the Rectangle
+f_createMonthlyRectangle(monthHigh, monthLow)
