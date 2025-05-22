@@ -1,0 +1,40 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © rjmiles9598
+
+//@version=6
+
+indicator("Dynamic Weekly Rectangle", overlay=true)
+
+// Calculate Current Week High and Low
+var float weekHigh = na
+var float weekLow = na
+if (weekofyear(time) != weekofyear(time[1]))
+    weekHigh := high
+    weekLow := low
+else
+    weekHigh := na(weekHigh) ? high : math.max(weekHigh, high)
+    weekLow := na(weekLow) ? low : math.min(weekLow, low)
+
+// Function to Build a Rectangle Bound by Bars for the Week
+f_createWeeklyRectangle(highPrice, lowPrice) =>
+    // Calculate rectangle boundaries based on bar index
+    var int weekStartBar = na // Persistent variable to store the first bar index of the week
+    if (weekofyear(time) != weekofyear(time[1]))
+        weekStartBar := bar_index // Record the starting bar of the new week
+    startBar = weekStartBar
+    endBar = bar_index // Current bar index
+
+    // Draw or update rectangle
+    var box rect = na
+    if (na(rect))
+        rect := box.new(left=startBar, top=highPrice, right=endBar, bottom=lowPrice, border_color=color.blue, bgcolor=color.new(color.blue, 85), xloc=xloc.bar_index)
+    else
+        box.set_left(rect, startBar)
+        box.set_right(rect, endBar)
+        box.set_top(rect, highPrice)
+        box.set_bottom(rect, lowPrice)
+
+    rect
+
+// Use the Function to Create the Rectangle
+f_createWeeklyRectangle(weekHigh, weekLow)
