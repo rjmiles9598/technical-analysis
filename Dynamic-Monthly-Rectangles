@@ -1,0 +1,57 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © rjmiles9598
+
+//@version=6
+indicator("Cmplt-Dynamic Monthly Rectangle", overlay=true, max_bars_back=5000)
+
+// Calculate Current Month High and Low
+var float monthHigh = na
+var float monthLow = na
+var int monthStartBar = na
+var label highLabel = na
+var label lowLabel = na
+
+if (month(time) != month(time[1]))
+    monthHigh := high
+    monthLow := low
+    monthStartBar := bar_index // Record the first bar of the new month
+else
+    monthHigh := na(monthHigh) ? high : math.max(monthHigh[1], high) // Use prior value
+    monthLow := na(monthLow) ? low : math.min(monthLow[1], low)     // Use prior value
+
+// Function to Build a Monthly Rectangle
+f_createMonthlyRectangle(highPrice, lowPrice) =>
+    // Calculate rectangle boundaries
+    startBar = monthStartBar
+    endBar = bar_index // Current bar index
+
+    // Draw or update rectangle
+    var box rect = na
+    if (na(rect))
+        rect := box.new(left=startBar, top=highPrice, right=endBar, bottom=lowPrice, border_color=color.blue, bgcolor=color.new(color.blue, 85), xloc=xloc.bar_index)
+    else
+        box.set_left(rect, startBar)
+        box.set_right(rect, endBar)
+        box.set_top(rect, highPrice)
+        box.set_bottom(rect, lowPrice)
+
+    rect
+
+// Add labels to indicate the monthly high and low values
+if not na(monthHigh) and not na(monthLow)
+    if na(highLabel)
+        highLabel := label.new(x=bar_index, y=monthHigh, text="High: " + str.tostring(monthHigh, format.mintick), color=color.new(color.green, 0), textcolor=color.white, style=label.style_label_down, size=size.small)
+    else
+        label.set_x(highLabel, bar_index)
+        label.set_y(highLabel, monthHigh)
+        label.set_text(highLabel, "High: " + str.tostring(monthHigh, format.mintick))
+
+    if na(lowLabel)
+        lowLabel := label.new(x=bar_index, y=monthLow, text="Low: " + str.tostring(monthLow, format.mintick), color=color.new(color.red, 0), textcolor=color.white, style=label.style_label_up, size=size.small)
+    else
+        label.set_x(lowLabel, bar_index)
+        label.set_y(lowLabel, monthLow)
+        label.set_text(lowLabel, "Low: " + str.tostring(monthLow, format.mintick))
+
+// Use the Function to Create the Rectangle
+f_createMonthlyRectangle(monthHigh, monthLow)
