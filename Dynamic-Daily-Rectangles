@@ -1,0 +1,43 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © rjmiles9598
+
+//@version=6
+
+indicator("Daily Dynamic Rectangle", overlay=true)
+
+// Calculate Current Day High and Low
+var float dayHigh = na
+var float dayLow = na
+if (dayofweek(time) != dayofweek(time[1]))
+    dayHigh := high
+    dayLow := low
+else
+    dayHigh := na(dayHigh) ? high : math.max(dayHigh, high)
+    dayLow := na(dayLow) ? low : math.min(dayLow, low)
+
+var int tradingDayStartBar = na // Persistent variable to store the first bar index of the trading day
+if (dayofweek(time) != dayofweek(time[1])) // Detect the start of a new trading day
+    tradingDayStartBar := bar_index
+startBar = tradingDayStartBar
+
+
+// Function to Build a Rectangle Bound by Bars
+f_createBarRectangle(highPrice, lowPrice) =>
+    // Calculate rectangle boundaries based on bar index
+    startBar2 = startBar // Approximation: Start of the day (based on 5-minute bars, ~78 bars per day)
+    endBar = bar_index // Current bar index
+
+    // Draw or update rectangle
+    var box rect = na
+    if (na(rect))
+        rect := box.new(left=startBar2, top=highPrice, right=endBar, bottom=lowPrice, border_color=color.green, bgcolor=color.new(color.green, 90), xloc=xloc.bar_index)
+    else
+        box.set_left(rect, startBar2)
+        box.set_right(rect, endBar)
+        box.set_top(rect, highPrice)
+        box.set_bottom(rect, lowPrice)
+
+    rect
+
+// Use the Function to Create the Rectangle
+f_createBarRectangle(dayHigh, dayLow)
