@@ -1,0 +1,75 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © rjmiles9598
+
+//@version=6
+indicator("Discrete Interval Trendlines with Persistence", overlay=true, max_lines_count=50)
+plot(close)
+
+// Input: set the length of each discrete interval (in minutes)
+intervalMinutes = input.int(15, "Interval Minutes", minval=1)
+intervalMs = intervalMinutes * 60000  // convert minutes to milliseconds
+
+// Persistent variables and arrays to store interval data
+var float[] intervalTimes   = array.new_float()  // stores interval start times (in ms)
+var float[] intervalHighs   = array.new_float()  // stores interval high values
+var float[] intervalLows    = array.new_float()  // stores interval low values
+var int currentIntervalStart = na              // timestamp when the current interval began
+var float currentIntervalHigh = na             // high during current interval
+var float currentIntervalLow  = na             // low during current interval
+
+// Persistent arrays to store the trendlines so they persist on the chart
+var line[] upperTrendLines = array.new_line()
+var line[] lowerTrendLines = array.new_line()
+
+// At the start of a new day, clear the stored intervals
+if dayofmonth(time) != dayofmonth(time[1])
+    array.clear(intervalTimes)
+    array.clear(intervalHighs)
+    array.clear(intervalLows)
+    // Optionally, you can also clear the trendline arrays if you want to remove yesterday’s lines:
+    // array.clear(upperTrendLines)
+    // array.clear(lowerTrendLines)
+    currentIntervalStart := na
+    currentIntervalHigh := na
+    currentIntervalLow  := na
+
+// Check if a new interval should start:
+// either we haven’t started one yet, or enough time has elapsed
+newInterval = na(currentIntervalStart) or (time - currentIntervalStart >= intervalMs)
+if newInterval
+    // If there is an existing (completed) interval, save its data
+    if not na(currentIntervalHigh) and not na(currentIntervalLow)
+        array.push(intervalTimes, currentIntervalStart)
+        array.push(intervalHighs, currentIntervalHigh)
+        array.push(intervalLows, currentIntervalLow)
+        
+        // If at least two intervals have been completed, create persistent trendlines
+        if array.size(intervalTimes) >= 2
+            // Get the last two intervals' indices
+            idx1 = array.size(intervalTimes) - 2
+            idx2 = array.size(intervalTimes) - 1
+
+            // Retrieve stored data for the two intervals
+            t1 = array.get(intervalTimes, idx1)
+            t2 = array.get(intervalTimes, idx2)
+            h1 = array.get(intervalHighs, idx1)
+            h2 = array.get(intervalHighs, idx2)
+            l1 = array.get(intervalLows, idx1)
+            l2 = array.get(intervalLows, idx2)
+            
+            // Create new persistent trendlines connecting these intervals
+            newUpperTrendLine = line.new(x1=int(t1), y1=h1, x2=int(t2), y2=h2, color=color.red, width=2, xloc=xloc.bar_time)
+            newLowerTrendLine = line.new(x1=int(t1), y1=l1, x2=int(t2), y2=l2, color=color.green, width=2, xloc=xloc.bar_time)
+            
+            // Store the created trendlines in their arrays so they remain on the chart
+            array.push(upperTrendLines, newUpperTrendLine)
+            array.push(lowerTrendLines, newLowerTrendLine)
+    // Start a new interval using the current bar's time and prices
+    currentIntervalStart := time
+    currentIntervalHigh := high
+    currentIntervalLow  := low
+else
+    // Update the current interval’s high/low as new bars come in
+    currentIntervalHigh := math.max(currentIntervalHigh, high)
+    currentIntervalLow  := math.min(currentIntervalLow, low)
+
